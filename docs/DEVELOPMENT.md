@@ -182,9 +182,8 @@ handshake, token refresh on expiry, and a **syntax check of `app/static/app.js`*
 ## 8. Contributing
 
 1. Fork and create a focused branch (`provider-twitch`, `fix-pending-timeout`, …).
-2. Keep the parity mindset: check how upstream Postiz
-   ([gitroomhq/postiz-app](https://github.com/gitroomhq/postiz-app)) solves the same problem and
-   reuse its semantics — payload shapes, status names, error messages.
+2. Follow the platform's official API documentation for payload shapes, status names and error
+   messages, and keep the conventions in §5.
 3. Add or extend tests (see §4). Both suites must end with their success banner.
 4. Update the [README platform table](../README.md#supported-platforms) and, if the behaviour is
    new, `docs/PROVIDERS.md` / `docs/ARCHITECTURE.md`.

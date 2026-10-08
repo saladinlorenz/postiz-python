@@ -2,8 +2,8 @@
 
 # Postiz Python
 
-**A complete, dependency-light Python rewrite of [Postiz](https://github.com/gitroomhq/postiz-app)** —
-schedule, publish and manage your social media from a single lightweight process.
+**A social media scheduler written from scratch in Python** —
+plan, publish and manage your social media from a single lightweight process.
 
 *No Node.js. No build step. No Redis. No Temporal. No Postgres requirement.
 Just Python, FastAPI and SQLite — up and running in under a minute.*
@@ -23,14 +23,14 @@ Just Python, FastAPI and SQLite — up and running in under a minute.*
 
 ## Why Postiz Python?
 
-The original Postiz is a fantastic open-source social media scheduler — but running it means
-operating a **Next.js + NestJS + Prisma + PostgreSQL + Redis + Temporal** monorepo with a
-Node toolchain and a multi-service deployment.
+Most social media schedulers ask you to operate a **Next.js + NestJS + Prisma + PostgreSQL +
+Redis + Temporal** stack — a Node toolchain, several services and real infrastructure for what
+amounts to *"publish at the right time"*.
 
-**Postiz Py** reimplements the same product — flows, OAuth dances, handshakes and all — in a
-single Python codebase you can read end to end:
+**Postiz Python** takes the opposite route: the whole product — OAuth dances, async handshakes,
+scheduling, comments — in a single Python codebase you can read end to end:
 
-| | Postiz (upstream) | Postiz Python |
+| | Typical JS scheduler | Postiz Python |
 |---|---|---|
 | Backend | NestJS (TypeScript) | **FastAPI** (`app/`) |
 | Frontend | Next.js / React + build | **Vanilla HTML/CSS/JS**, served by the API |
@@ -46,7 +46,7 @@ single Python codebase you can read end to end:
 - 🔐 **Every auth style** the real platforms demand: OAuth 2.0 (+ PKCE S256), OAuth 1.0a HMAC-SHA1, API keys, bot tokens
 - 🔁 **Automatic token refresh** with a 5-minute margin, plus sibling synchronization for multi-account providers
 - ⏱ **Deterministic scheduler**: publish due posts, poll async handshakes, refresh expiring tokens
-- 🤝 **3-phase async publishing** (`post` → `check` → `finalize`) with a duplicate-post guard, mirroring upstream's Temporal workflow
+- 🤝 **3-phase async publishing** (`post` → `check` → `finalize`) with a duplicate-post guard
 - 🧩 **Multi-account providers**: Facebook Pages, Instagram accounts and Tumblr blogs each become their own channel from one login
 - 💬 **Comments & replies** threaded from the scheduler (`parentPostId` + delay)
 - 🖼 **Media pipeline**: local uploads, image dimensions, chunked uploads, image downscaling
@@ -80,8 +80,8 @@ single Python codebase you can read end to end:
 | **X (Twitter)** | OAuth 1.0a (HMAC-SHA1) | ✅ images + video | ✅ articles | ✅ | 10 |
 | **YouTube** | OAuth 2.0 (Google) | ✅ video upload | ✅ | ✅ | 200 |
 
-*Async publish* = the provider needs a handshake (upload is processed remotely), so the post waits in
-`PENDING` until the platform confirms — exactly like upstream's Temporal workflow.
+*Async publish* = the provider needs a handshake (the upload is processed remotely), so the post
+waits in `PENDING` until the platform confirms it.
 
 ---
 
@@ -305,10 +305,9 @@ postiz-python/
 
 ## Credits
 
-This project is an independent **Python port of [Postiz](https://github.com/gitroomhq/postiz-app)**
-by [Gitroom](https://postiz.com) — same concepts, same platform behaviours, rewritten from
-scratch in Python with a vanilla frontend. All credit for the original design and platform
-integrations belongs to the Postiz team.
+Written from scratch in Python — backend, frontend and tests. Platform behaviours follow each
+network's official API documentation; where an endpoint is undocumented, the payloads match what
+the platform's own clients send.
 
 Issues and pull requests are welcome.
 

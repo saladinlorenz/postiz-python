@@ -1,8 +1,8 @@
 # Architecture
 
 Postiz Python is a **single-process application**: one FastAPI server, one SQLite file, one
-background thread. Everything that upstream Postiz spreads across Next.js, NestJS, Prisma,
-Redis and Temporal is folded into a few hundred lines of readable Python.
+background thread. What a typical scheduler spreads across Next.js, NestJS, Prisma, Redis and a
+workflow engine is folded into a few hundred lines of readable Python.
 
 This document explains the moving parts, the lifecycles of a post, and the decisions behind them.
 
@@ -128,7 +128,8 @@ stateDiagram-v2
 
 Asynchronous uploads (LinkedIn, X, YouTube, TikTok, Facebook, Instagram, Mastodon, Pinterest,
 Reddit, Threads, Bluesky) keep the row in `QUEUE` but mark it with a **`pendingData`** payload —
-that is the "pending" phase upstream Postiz models with Temporal.
+that is the **pending** phase: the row is not published yet, but the platform holds a ticket the
+scheduler keeps polling until it settles.
 
 ### 4.3 The three-phase handshake
 
@@ -141,7 +142,7 @@ check_post_status(...)   polled every PENDING_CHECK_INTERVAL_SECONDS
         ├── status "pending"   → keep waiting (pendingChecks++)
         ├── status "failed"    → mark ERROR (message from provider)
         ├── status "completed" → mark PUBLISHED   ← duplicate guard: a post that was already
-        │                                             confirmed upstream is never re-published
+        │                                             confirmed remotely is never re-published
         └── status "ready"     → finalize_post(...)
                     │
                     ├── status "completed" → mark PUBLISHED
@@ -238,9 +239,9 @@ and the integration shows the reconnect banner in the UI.
 | `RefreshTokenError` | Access token expired / revoked | refresh + retry once, else ERROR |
 | `Disconnect` | Integration must be reconnected | `refreshNeeded = True`, ERROR |
 | `NotEnoughScopes` | Granted scopes < required scopes | HTTP 409 with missing scopes (connect flow) |
-| Any other exception | Bug or unexpected upstream behaviour | `ERROR: Unexpected error …` |
+| Any other exception | Bug or unexpected platform behaviour | `ERROR: Unexpected error …` |
 
-Constructor shape (kept from upstream for readability):
+Constructor shape:
 
 ```python
 BadBody(identifier, json_body, "{}", human_message)
@@ -333,28 +334,20 @@ Serializers deliberately **hide secrets**: `serialize_integration()` never retur
 
 ---
 
-## 11. Parity with upstream Postiz
+## 11. Scope & design decisions
 
-| Upstream (TypeScript) | Here (Python) |
-|---|---|
-| NestJS controllers | FastAPI routers (`app/api/`) |
-| `SocialAbstract` + `*.provider.ts` | `app/integrations/base.py` + `social/*.py` |
-| Temporal `post.workflow` | `scheduler.py`: `publish_post` → `resolve_pending` → `finalize_post` |
-| Temporal refresh-token workflow | `refresh_due_tokens()` + reactive `RefreshTokenError` retry |
-| Redis OAuth state | `dict` with TTL (`app/api/integrations.py`) |
-| Prisma / PostgreSQL | SQLAlchemy / SQLite |
-| Next.js React frontend | Vanilla `index.html` + `app.js` + `style.css` |
-| `@Tool` decorators (agent tools) | `options(key, integration)` endpoint |
-| DTO validation per provider | `postSettings` schema + frontend field rendering |
-| `isBetweenSteps` / `reConnect` UI | `connections()` hook (multi-account) instead |
+**In scope**: connecting accounts, composing, scheduling, publishing, token refresh, comments,
+media and per-post settings — the full personal social-media scheduling loop, for 19 platforms.
 
-### Known deviations
+### Explicit non-goals
 
-- No AI agent / tool-calling layer (upstream's `@Tool` functions used by their copilot).
-- The editor is one plain textarea: upstream's `editor = 'html' | 'markdown' | 'normal'` modes
-  and per-provider rich editors are not reproduced; content is passed through as-is
-  (WordPress gets newlines converted to `<br />`).
-- Analytics and bidding/collaboration features of upstream are out of scope.
+- No AI agent / tool-calling layer: provider capabilities are plain calls
+  (`options(key, integration)` + `postSettings` fields).
+- One plain textarea editor: no per-provider rich editors, no `html` / `markdown` / `normal`
+  modes; content is passed through as-is (WordPress gets newlines converted to `<br />`).
+- No analytics, bidding, teams or approval workflows — this is a single-user, self-hosted tool.
+- No frontend build step, by design: the SPA is plain HTML/CSS/JS served by FastAPI, so what you
+  edit is what runs.
 
 ---
 
